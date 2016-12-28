@@ -118,11 +118,27 @@ function LSTM:_buildLayer(inputSize, hiddenSize)
   local x = inputs[3]
 
   -- Evaluate the input sums at once for efficiency.
-  local i2h = nn.Linear(inputSize, 4 * hiddenSize)(x)
+  local i2h = nn.Linear(inputSize, 4 * hiddenSize, not self.batchNorm)(x)
   local h2h = nn.Linear(hiddenSize, 4 * hiddenSize, false)(prevH)
   if self.batchNorm then
-    i2h = nn.BatchNormalization(4 * hiddenSize, self.eps, self.momentum, self.affine)(i2h)
-    h2h = nn.BatchNormalization(4 * hiddenSize, self.eps, self.momentum, self.affine)(h2h)
+    bn_Wx = nn.BatchNormalization(4 * hiddenSize, self.eps, self.momentum, self.affine)
+    bn_Wh = nn.BatchNormalization(4 * hiddenSize, self.eps, self.momentum, self.affine)
+
+    -- don't allow bias (i.e hold bias = 0)
+    bn_Wx.bias = nil
+    bn_Wx.gradBias = nil
+    bn_Wh.bias = nil
+    bn_Wh.gradBias = nil
+
+    -- initialize weights to 0.1 uniformly
+    bn_Wx.weight:fill(0.1)
+    bn_Wh.weight:fill(0.1)
+
+    i2h = bn_Wx(i2h)
+    h2h = bn_Wh(h2h)
+
+    -- add a separate (no batch norm) bias
+    h2h = nn.Add(4 * hiddenSize)(h2h)
   end
 
   local allInputSums = nn.CAddTable()({i2h, h2h})
@@ -143,12 +159,17 @@ function LSTM:_buildLayer(inputSize, hiddenSize)
     nn.CMulTable()({forgetGate, prevC}),
     nn.CMulTable()({inGate, inTransform})
   })
-  if self.batchNorm then
-    nextC = nn.BatchNormalization(hiddenSize, self.eps, self.momentum, self.affine)(nextC)
-  end
 
   -- Gated cells form the output.
-  local nextH = nn.CMulTable()({outGate, nn.Tanh()(nextC)})
+  local nextH
+  if self.batchNorm then
+    bn_C = nn.BatchNormalization(hiddenSize, self.eps, self.momentum, self.affine)
+    bn_C.weight:fill(0.1)
+    bn_C.bias:zero()
+    nextH = nn.CMulTable()({outGate, nn.Tanh()(bn_C(nextC))})
+  else
+    nextH = nn.CMulTable()({outGate, nn.Tanh()(nextC)})
+  end
 
   return nn.gModule(inputs, {nextC, nextH})
 end
