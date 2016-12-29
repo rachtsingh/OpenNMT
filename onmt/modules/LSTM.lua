@@ -23,7 +23,6 @@ Computes $$(c_{t-1}, h_{t-1}, x_t) => (c_{t}, h_{t})$$.
 
 --]]
 local LSTM, parent = torch.class('onmt.LSTM', 'nn.Container')
-
 --[[
 Parameters:
 
