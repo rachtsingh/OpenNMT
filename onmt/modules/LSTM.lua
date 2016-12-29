@@ -123,14 +123,13 @@ function LSTM:_buildLayer(inputSize, hiddenSize)
   if self.batchNorm then
     i2h = nn.BatchNormalization(4 * hiddenSize, self.eps, self.momentum, self.affine)(i2h)
     h2h = nn.BatchNormalization(4 * hiddenSize, self.eps, self.momentum, self.affine)(h2h)
-    i2h.bias = nil
-    i2h.gradBias = nil
-    h2h.bias = nil
-    h2h.gradBias = nil
-    i2h.weight:fill(0.1)
-    h2h.weight:fill(0.1)
-    i2h.bias:zero()
-    h2h.bias:zero()
+    print(i2h.data.module.tag)
+    i2h.data.module.bias = nil
+    i2h.data.module.gradBias = nil
+    h2h.data.module.bias = nil
+    h2h.data.module.gradBias = nil
+    i2h.data.module.weight:fill(0.1)
+    h2h.data.module.weight:fill(0.1)
     h2h = nn.Add(4 * hiddenSize)(h2h)
   end
 
@@ -154,8 +153,8 @@ function LSTM:_buildLayer(inputSize, hiddenSize)
   })
   if self.batchNorm then
     nextC = nn.BatchNormalization(hiddenSize, self.eps, self.momentum, self.affine)(nextC)
-    nextC.weight:fill(0.1)
-    nextC.bias:zero()
+    nextC.data.module.weight:fill(0.1)
+    nextC.data.module.bias:zero()
   end
 
   -- Gated cells form the output.
