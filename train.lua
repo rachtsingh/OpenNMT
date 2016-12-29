@@ -35,7 +35,7 @@ cmd:option('-input_feed', 1, [[Feed the context vector at each time step as addi
 cmd:option('-residual', false, [[Add residual connections between RNN layers.]])
 cmd:option('-brnn', false, [[Use a bidirectional encoder]])
 cmd:option('-brnn_merge', 'sum', [[Merge action for the bidirectional hidden states: concat or sum]])
-cmd:option('-batch_norm', false, [[Use batch normalization in the LSTM]])
+cmd:option('-layer_norm', false, [[Use batch normalization in the LSTM]])
 
 cmd:text("")
 cmd:text("**Optimization options**")
@@ -441,7 +441,7 @@ local function main()
     opt.rnn_size = checkpoint.options.rnn_size
     opt.brnn = checkpoint.options.brnn
     opt.brnn_merge = checkpoint.options.brnn_merge
-    opt.batch_norm = checkpoint.options.batch_norm
+    opt.layer_norm = checkpoint.options.layer_norm
     opt.input_feed = checkpoint.options.input_feed
 
     -- Resume training from checkpoint

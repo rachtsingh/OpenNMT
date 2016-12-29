@@ -32,12 +32,12 @@ Parameters:
   * `hiddenSize` - Size of the hidden layers.
   * `dropout` - Dropout rate to use.
   * `residual` - Residual connections between layers.
-  * `batchNorm` - Whether to use batch normalization.
-  * `eps` - If using batchNorm, a small value to avoid divide-by-zero (see nn.BatchNormalization).
-  * `momentum` - If using batchNorm, the corresponding momentum (see nn.BatchNormalization).
-  * `affine` - If using batchNorm, whether to learn the transform (see nn.BatchNormalization).
+  * `layerNorm` - Whether to use batch normalization.
+  * `eps` - If using layerNorm, a small value to avoid divide-by-zero (see nn.BatchNormalization).
+  * `momentum` - If using layerNorm, the corresponding momentum (see nn.BatchNormalization).
+  * `affine` - If using layerNorm, whether to learn the transform (see nn.BatchNormalization).
 --]]
-function LSTM:__init(layers, inputSize, hiddenSize, dropout, residual, batchNorm, eps, momentum, affine)
+function LSTM:__init(layers, inputSize, hiddenSize, dropout, residual, layerNorm, eps, momentum, affine)
   parent.__init(self)
 
   dropout = dropout or 0
@@ -46,8 +46,8 @@ function LSTM:__init(layers, inputSize, hiddenSize, dropout, residual, batchNorm
   self.numEffectiveLayers = 2 * layers
   self.outputSize = hiddenSize
 
-  if batchNorm then
-    self.batchNorm = true
+  if layerNorm then
+    self.layerNorm = true
     self.eps = eps or 0.1
     self.momentum = momentum or 0.1
     self.affine = (affine == nil) or affine
@@ -120,13 +120,6 @@ function LSTM:_buildLayer(inputSize, hiddenSize)
   -- Evaluate the input sums at once for efficiency.
   local i2h = nn.Linear(inputSize, 4 * hiddenSize)(x)
   local h2h = nn.Linear(hiddenSize, 4 * hiddenSize, false)(prevH)
-  if self.batchNorm then
-    -- i2h = nn.BatchNormalization(4 * hiddenSize, self.eps, self.momentum, self.affine)(i2h)
-    h2h = nn.BatchNormalization(4 * hiddenSize, self.eps, self.momentum, self.affine)(h2h)
-    h2h.bias = nil
-    h2h.gradBias = nil
-    -- h2h = nn.Add(4 * hiddenSize)(h2h)
-  end
 
   local allInputSums = nn.CAddTable()({i2h, h2h})
 
@@ -146,9 +139,9 @@ function LSTM:_buildLayer(inputSize, hiddenSize)
     nn.CMulTable()({forgetGate, prevC}),
     nn.CMulTable()({inGate, inTransform})
   })
-  -- if self.batchNorm then
-  --   nextC = nn.BatchNormalization(hiddenSize, self.eps, self.momentum, self.affine)(nextC)
-  -- end
+  if self.layerNorm then
+    nextC = nn.LayerNormalization(hiddenSize, self.eps, self.momentum, self.affine)(nextC)
+  end
 
   -- Gated cells form the output.
   local nextH = nn.CMulTable()({outGate, nn.Tanh()(nextC)})
