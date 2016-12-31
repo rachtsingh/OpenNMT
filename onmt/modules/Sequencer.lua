@@ -105,7 +105,7 @@ function Sequencer:net(t)
     return self.networkClones[t]
   else
     if #self.networkClones > 0 then
-      return self.networkClones[1]
+      return self.networkClones[t]
     else
       return self.network
     end
@@ -117,8 +117,9 @@ function Sequencer:training()
   parent.training(self)
 
   if #self.networkClones > 0 then
-    -- Only first clone can be used for evaluation.
-    self.networkClones[1]:training()
+    for i = 1, #self.networkClones do
+      self.networkClones[i]:training()
+    end
   end
 end
 
@@ -126,7 +127,7 @@ end
 function Sequencer:evaluate()
   parent.evaluate(self)
 
-  if #self.networkClones > 0 then
-    self.networkClones[1]:evaluate()
+  for i = 1, #self.networkClones do
+    self.networkClones[i]:evaluate()
   end
 end
