@@ -48,8 +48,8 @@ function LSTM:__init(layers, inputSize, hiddenSize, dropout, residual, batchNorm
 
   if batchNorm then
     self.batchNorm = true
-    self.eps = eps or 0.1
-    self.momentum = momentum or 0.1
+    self.eps = eps
+    self.momentum = momentum
     self.affine = (affine == nil) or affine
   end
 
