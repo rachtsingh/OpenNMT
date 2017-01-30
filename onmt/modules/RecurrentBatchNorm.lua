@@ -46,6 +46,9 @@ function RecurrentBatchNorm:__timeStepClone()
       bn.bias:zero()
     end
   end
+  if #self.modules > 0 then
+    bn:share(self.modules[1], 'weight', 'gradWeight', 'bias', 'gradBias')
+  end
   return bn
 end
 
